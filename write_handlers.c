@@ -1,196 +1,117 @@
-#include "main.h"
+#ifndef MAIN_H
+#define MAIN_H
+#include <stdarg.h>
+#include <stdio.h>
+#include <unistd.h>
 
-unsigned char handle_flags(const char *flag, char *index);
-unsigned char handle_length(const char *modifier, char *index);
-int handle_width(va_list args, const char *modifier, char *index);
-int handle_precision(va_list args, const char *modifier, char *index);
-unsigned int (*handle_specifiers(const char *specifier))(va_list, buffer_t *,
-		unsigned char, int, int, unsigned char);
+#define UNUSED(x) (void)(x)
+#define BUFF_SIZE 1024
 
-/**
- * handle_flags - Matches flags with corresponding values.
- * @flag: A pointer to a potential string of flags.
- * @index: An index counter for the original format string.
- *
- * Return: If flag characters are matched - a corresponding value.
- *         Otherwise - 0.
- */
-unsigned char handle_flags(const char *flag, char *index)
-{
-	int i, j;
-	unsigned char ret = 0;
-	flag_t flags[] = {
-		{'+', PLUS},
-		{' ', SPACE},
-		{'#', HASH},
-		{'0', ZERO},
-		{'-', NEG},
-		{0, 0}
-	};
+/* FLAGS */
+#define F_MINUS 1
+#define F_PLUS 2
+#define F_ZERO 4
+#define F_HASH 8
+#define F_SPACE 16
 
-	for (i = 0; flag[i]; i++)
-	{
-		for (j = 0; flags[j].flag != 0; j++)
-		{
-			if (flag[i] == flags[j].flag)
-			{
-				(*index)++;
-				if (ret == 0)
-					ret = flags[j].value;
-				else
-					ret |= flags[j].value;
-				break;
-			}
-		}
-		if (flags[j].value == 0)
-			break;
-	}
-
-	return (ret);
-}
+/* SIZES */
+#define S_LONG 2
+#define S_SHORT 1
 
 /**
- * handle_length - Matches length modifiers with their corresponding value.
- * @modifier: A pointer to a potential length modifier.
- * @index: An index counter for the original format string.
+ * struct fmt - Struct opp
  *
- * Return: If a lenth modifier is matched - its corresponding value.
- *         Otherwise - 0.
+ * @fmt: The format
+ * @fn: The function associated
  */
-unsigned char handle_length(const char *modifier, char *index)
+struct fmt
 {
-	if (*modifier == 'h')
-	{
-		(*index)++;
-		return (SHORT);
-	}
+	char fmt;
+	int (*fn)(va_list, char[], int, int, int, int);
+};
 
-	else if (*modifier == 'l')
-	{
-		(*index)++;
-		return (LONG);
-	}
-
-	return (0);
-}
 
 /**
- * handle_width - Matches a width modifier with its corresponding value.
- * @args: A va_list of arguments.
- * @modifier: A pointer to a potential width modifier.
- * @index: An index counter for the original format string.
+ * typedef struct fmt fmt_t - Struct op
  *
- * Return: If a width modifier is matched - its value.
- *         Otherwise - 0.
+ * @fmt: The format
+ * @fm_t: The function associated
  */
-int handle_width(va_list args, const char *modifier, char *index)
-{
-	int value = 0;
+typedef struct fmt fmt_t;
 
-	while ((*modifier >= '0' && *modifier <= '9') || (*modifier == '*'))
-	{
-		(*index)++;
+int _printf(const char *format, ...);
+int handle_print(const char *fmt, int *i,
+va_list list, char buffer[], int flags, int width, int precision, int size);
 
-		if (*modifier == '*')
-		{
-			value = va_arg(args, int);
-			if (value <= 0)
-				return (0);
-			return (value);
-		}
+/****************** FUNCTIONS ******************/
 
-		value *= 10;
-		value += (*modifier - '0');
-		modifier++;
-	}
+/* Funtions to print chars and strings */
+int print_char(va_list types, char buffer[],
+	int flags, int width, int precision, int size);
+int print_string(va_list types, char buffer[],
+	int flags, int width, int precision, int size);
+int print_percent(va_list types, char buffer[],
+	int flags, int width, int precision, int size);
 
-	return (value);
-}
+/* Functions to print numbers */
+int print_int(va_list types, char buffer[],
+	int flags, int width, int precision, int size);
+int print_binary(va_list types, char buffer[],
+	int flags, int width, int precision, int size);
+int print_unsigned(va_list types, char buffer[],
+	int flags, int width, int precision, int size);
+int print_octal(va_list types, char buffer[],
+	int flags, int width, int precision, int size);
+int print_hexadecimal(va_list types, char buffer[],
+	int flags, int width, int precision, int size);
+int print_hexa_upper(va_list types, char buffer[],
+	int flags, int width, int precision, int size);
 
-/**
- * handle_precision - Matches a precision modifier with
- *                    its corresponding value.
- * @args: A va_list of arguments.
- * @modifier: A pointer to a potential precision modifier.
- * @index: An index counter for the original format string.
- *
- * Return: If a precision modifier is matched - its value.
- *         If the precision modifier is empty, zero, or negative - 0.
- *         Otherwise - -1.
- */
-int handle_precision(va_list args, const char *modifier, char *index)
-{
-	int value = 0;
+int print_hexa(va_list types, char map_to[],
+char buffer[], int flags, char flag_ch, int width, int precision, int size);
 
-	if (*modifier != '.')
-		return (-1);
+/* Function to print non printable characters */
+int print_non_printable(va_list types, char buffer[],
+	int flags, int width, int precision, int size);
 
-	modifier++;
-	(*index)++;
+/* Funcion to print memory address */
+int print_pointer(va_list types, char buffer[],
+	int flags, int width, int precision, int size);
 
-	if ((*modifier <= '0' || *modifier > '9') &&
-	     *modifier != '*')
-	{
-		if (*modifier == '0')
-			(*index)++;
-		return (0);
-	}
+/* Funciotns to handle other specifiers */
+int get_flags(const char *format, int *i);
+int get_width(const char *format, int *i, va_list list);
+int get_precision(const char *format, int *i, va_list list);
+int get_size(const char *format, int *i);
 
-	while ((*modifier >= '0' && *modifier <= '9') ||
-	       (*modifier == '*'))
-	{
-		(*index)++;
+/*Function to print string in reverse*/
+int print_reverse(va_list types, char buffer[],
+	int flags, int width, int precision, int size);
 
-		if (*modifier == '*')
-		{
-			value = va_arg(args, int);
-			if (value <= 0)
-				return (0);
-			return (value);
-		}
+/*Function to print a string in rot 13*/
+int print_rot13string(va_list types, char buffer[],
+	int flags, int width, int precision, int size);
 
-		value *= 10;
-		value += (*modifier - '0');
-		modifier++;
-	}
+/* width handler */
+int handle_write_char(char c, char buffer[],
+	int flags, int width, int precision, int size);
+int write_number(int is_positive, int ind, char buffer[],
+	int flags, int width, int precision, int size);
+int write_num(int ind, char bff[], int flags, int width, int precision,
+	int length, char padd, char extra_c);
+int write_pointer(char buffer[], int ind, int length,
+	int width, int flags, char padd, char extra_c, int padd_start);
 
-	return (value);
-}
+int write_unsgnd(int is_negative, int ind,
+char buffer[],
+	int flags, int width, int precision, int size);
 
-/**
- * handle_specifiers - Matches a conversion specifier with
- *                     a corresponding conversion function.
- * @specifier: A pointer to a potential conversion specifier.
- *
- * Return: If a conversion function is matched - a pointer to the function.
- *         Otherwise - NULL.
- */
-unsigned int (*handle_specifiers(const char *specifier))(va_list, buffer_t *,
-		unsigned char, int, int, unsigned char)
-{
-	int i;
+/****************** UTILS ******************/
+int is_printable(char);
+int append_hexa_code(char, char[], int);
+int is_digit(char);
 
-	converter_t converters[] = {
-		{'c', convert_c},
-		{'s', convert_s},
-		{'d', convert_di},
-		{'i', convert_di},
-		{'%', convert_percent},
-		{'b', convert_b},
-		{'u', convert_u},
-		{'o', convert_o},
-		{'x', convert_x},
-		{'X', convert_X},
-		{'S', convert_S},
-		{'p', convert_p},
-		{'r', convert_r},
-		{'R', convert_R},
-		{0, NULL}
-	};
-	for (i = 0; converters[i].func; i++)
-	{
-		if (converters[i].specifier == *specifier)
-			return (converters[i].func);
-	}
-	return (NULL);
-}
+long int convert_size_number(long int num, int size);
+long int convert_size_unsgnd(unsigned long int num, int size);
+
+#endif /* MAIN_H */
