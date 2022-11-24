@@ -1,20 +1,3 @@
-
-Ladyroyal5
-/
-printf
-Public
-Code
-Issues
-Pull requests
-Actions
-Projects
-Security
-Insights
-printf/write_handlers.c
-@Ladyroyal5
-Ladyroyal5 man3
- 1 contributor
-252 lines (227 sloc)  6.36 KB
 #include "main.h"
 
 /************************* WRITE HANDLE *************************/
